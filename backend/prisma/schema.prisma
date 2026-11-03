@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                        String     @id @default(uuid())
+  name                      String
+  defaultLowStockThreshold  Int        @default(5)
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+
+  users                     User[]
+  products                  Product[]
+  stockLogs                 StockLog[]
+}
+
+model User {
+  id              String        @id @default(uuid())
+  email           String        @unique
+  password        String
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([organizationId])
+}
+
+model Product {
+  id                 String        @id @default(uuid())
+  organizationId     String
+  organization       Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name               String
+  sku                String
+  description        String?
+  quantity           Int           @default(0)
+  costPrice          Float?
+  sellingPrice       Float?
+  lowStockThreshold  Int?
+  lastUpdatedBy      String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  stockLogs          StockLog[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+}
+
+model StockLog {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  changeAmount    Int
+  previousQty     Int
+  newQty          Int
+  note            String?
+  updatedBy       String?
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([productId])
+}
