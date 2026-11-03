@@ -36,14 +36,20 @@ app.use('/api/products', productRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 
-// Serve compiled frontend SPA if dist exists
-const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+// Serve compiled frontend SPA
+const frontendDistPath = fs.existsSync(path.resolve(__dirname, '../../frontend/dist'))
+  ? path.resolve(__dirname, '../../frontend/dist')
+  : path.resolve(process.cwd(), 'frontend/dist');
+
 if (fs.existsSync(frontendDistPath)) {
   app.use(express.static(frontendDistPath));
 
   app.use((req, res, next) => {
     if (req.method === 'GET' && !req.path.startsWith('/api')) {
-      return res.sendFile(path.join(frontendDistPath, 'index.html'));
+      const indexPath = path.join(frontendDistPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+      }
     }
     next();
   });
