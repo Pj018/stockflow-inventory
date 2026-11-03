@@ -10,11 +10,9 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  Package,
-  Layers,
-  AlertTriangle,
-  CheckCircle2,
   Sliders,
+  Layers,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -51,7 +49,7 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100/80 flex">
-      {/* LEFT COLUMN: Clean Professional Product Showcase (Inventory Specific) */}
+      {/* LEFT COLUMN: Clean Professional Platform Capabilities (No mock live data) */}
       <div className="hidden lg:flex lg:w-1/2 bg-slate-50/90 border-r border-slate-200/90 p-12 flex-col justify-between relative overflow-hidden">
         {/* Subtle decorative background grid pattern */}
         <div
@@ -78,9 +76,9 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: Inventory Dashboard Preview Card */}
-        <div className="relative z-10 my-auto py-6 max-w-lg space-y-6">
-          <div className="space-y-2">
+        {/* Center: Professional Enterprise Overview */}
+        <div className="relative z-10 my-auto py-8 max-w-lg space-y-8">
+          <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 leading-snug">
               Smart inventory control designed for growing commerce.
             </h1>
@@ -89,80 +87,42 @@ export const LoginPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Realistic Inventory Preview Mock Widget */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-xs font-semibold text-slate-800">Acme Supply Co.</span>
-                <span className="text-[11px] text-slate-400 font-mono">Store Catalog</span>
+          {/* Clean Enterprise Feature Architecture */}
+          <div className="space-y-3.5">
+            <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+                <ShieldCheck className="w-5 h-5" />
               </div>
-              <span className="text-[11px] text-slate-500 font-medium">Live Synced</span>
-            </div>
-
-            {/* Mini KPIs */}
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Catalog</p>
-                <p className="text-base font-bold text-slate-900 mt-0.5">6 SKUs</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/70">
-                <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">In Stock</p>
-                <p className="text-base font-bold text-blue-700 mt-0.5">189 Units</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/70">
-                <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">Alerts</p>
-                <p className="text-base font-bold text-amber-800 mt-0.5">3 Low</p>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Multi-Tenant Data Isolation</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Every store operates in its own isolated workspace. Products, inventory levels, and pricing are strictly protected against cross-tenant leaks.
+                </p>
               </div>
             </div>
 
-            {/* Mini Stock Rows */}
-            <div className="space-y-2 pt-1 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-50/60 border border-slate-100 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-slate-800">Mechanical Gaming Keyboard</p>
-                  <p className="text-[11px] text-slate-400 font-mono">TECH-KBD-02</p>
-                </div>
-                <div className="text-right flex items-center gap-2">
-                  <span className="font-bold text-slate-800">4 units</span>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold text-[10px] border border-amber-200">
-                    Low Stock
-                  </span>
-                </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+                <Sliders className="w-5 h-5" />
               </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-50/60 border border-slate-100 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-slate-800">Wireless Ergonomic Mouse</p>
-                  <p className="text-[11px] text-slate-400 font-mono">TECH-MSE-01</p>
-                </div>
-                <div className="text-right flex items-center gap-2">
-                  <span className="font-bold text-slate-800">45 units</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[10px] border border-emerald-200">
-                    Healthy
-                  </span>
-                </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Automated Stock Alerts</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Configure store-wide safety buffers or custom product thresholds. Low-stock warnings are calculated dynamically to prevent stockouts.
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Feature Checklist */}
-          <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 pt-2">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Multi-Tenant Data Isolation</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Custom Alert Thresholds</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Scoped SKU Cataloging</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Stock Adjustment Logs</span>
+            <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Stock Movement Audit Trail</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Track every quantity adjustment (+/- units) with audit notes, timestamps, and user attribution for end-to-end operational accountability.
+                </p>
+              </div>
             </div>
           </div>
         </div>

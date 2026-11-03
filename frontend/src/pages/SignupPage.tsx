@@ -10,7 +10,7 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  SlidersHorizontal,
+  Sliders,
   Package,
   Layers,
 } from 'lucide-react';
@@ -61,7 +61,7 @@ export const SignupPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100/80 flex">
-      {/* LEFT COLUMN: Clean Professional Showcase (Inventory Specific) */}
+      {/* LEFT COLUMN: Clean Professional Platform Capabilities (No mock live data) */}
       <div className="hidden lg:flex lg:w-1/2 bg-slate-50/90 border-r border-slate-200/90 p-12 flex-col justify-between relative overflow-hidden">
         {/* Subtle decorative background pattern */}
         <div
@@ -88,9 +88,9 @@ export const SignupPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Content: Store Setup & Provisioning Flow */}
-        <div className="relative z-10 my-auto py-6 max-w-lg space-y-6">
-          <div className="space-y-2">
+        {/* Center: Store Setup & Platform Architecture */}
+        <div className="relative z-10 my-auto py-8 max-w-lg space-y-8">
+          <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 leading-snug">
               Deploy your dedicated store inventory workspace.
             </h1>
@@ -99,71 +99,42 @@ export const SignupPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Provisioning Stepper Card */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 space-y-3.5">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-              <span className="text-xs font-semibold text-slate-800">
-                Automatic Tenant Provisioning Flow
-              </span>
-              <span className="text-[11px] font-medium text-blue-600">3 Steps</span>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-                <div className="p-1.5 rounded-lg bg-blue-100 text-blue-700 shrink-0 mt-0.5">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-900">1. Organization Scoping</p>
-                  <p className="text-[11px] text-slate-500">
-                    Creates an isolated organization boundary ensuring zero cross-tenant data leaks.
-                  </p>
-                </div>
+          {/* Clean Enterprise Feature Architecture */}
+          <div className="space-y-3.5">
+            <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+                <Building2 className="w-5 h-5" />
               </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-                <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700 shrink-0 mt-0.5">
-                  <SlidersHorizontal className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-900">2. Low-Stock Alert Rules</p>
-                  <p className="text-[11px] text-slate-500">
-                    Configures a default 5-unit buffer to automatically flag items needing replenishment.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-                <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0 mt-0.5">
-                  <Package className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-900">3. Ready for Catalog SKUs</p>
-                  <p className="text-[11px] text-slate-500">
-                    Start creating products, updating quantities, and tracking stock movements right away.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Dedicated Organization Workspace</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Automatic provisioning creates an isolated organizational boundary ensuring complete data segregation from other stores.
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Value Checklist */}
-          <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 pt-1">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>100% Tenant Isolation</span>
+            <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+                <Package className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">SKU Uniqueness & Scoping</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Freedom to use your internal catalog SKUs without naming collisions, enforced with database-level composite unique constraints.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>SKU Conflict Protection</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Full Audit Logs</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Custom Alert Rules</span>
+
+            <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-xs flex items-start gap-3.5">
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
+                <Sliders className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Configurable Alert Rules</h3>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                  Set a store-wide default threshold buffer or customize individual products to maintain healthy inventory turnover.
+                </p>
+              </div>
             </div>
           </div>
         </div>
