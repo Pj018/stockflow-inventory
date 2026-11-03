@@ -2,6 +2,22 @@ import { Product, DashboardMetrics, Organization, User } from '../types';
 
 const API_BASE_URL = '/api';
 
+export class ApiError extends Error {
+  public status: number;
+  public field?: string;
+  public details?: any;
+  public errors?: Array<{ field: string; message: string }>;
+
+  constructor(message: string, status: number, details?: any, field?: string, errors?: any[]) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.details = details;
+    this.field = field;
+    this.errors = errors;
+  }
+}
+
 class ApiClient {
   private getToken(): string | null {
     return localStorage.getItem('stockflow_token');
@@ -31,11 +47,13 @@ class ApiClient {
     }
 
     if (!response.ok) {
+      const fieldError = data?.errors?.[0]?.message;
       const errorMsg =
+        (data?.message && data.message !== 'Validation failed' ? data.message : fieldError) ||
         data?.message ||
-        (data?.errors && data.errors[0]?.message) ||
         `HTTP Error ${response.status}`;
-      throw new Error(errorMsg);
+      const detectedField = data?.details?.field || data?.errors?.[0]?.field;
+      throw new ApiError(errorMsg, response.status, data?.details, detectedField, data?.errors);
     }
 
     return data;

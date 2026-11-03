@@ -166,7 +166,11 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                 required
                 value={changeAmount}
                 onChange={(e) => setAmount(parseInt(e.target.value, 10) || 0)}
-                className="w-full text-center font-bold text-lg px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className={`w-full text-center font-bold text-lg px-3 py-1.5 rounded-lg outline-none transition ${
+                  isInvalid || changeAmount === 0
+                    ? 'border-2 border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
               <button
                 type="button"
@@ -176,6 +180,14 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                 <Plus className="w-4 h-4" />
               </button>
             </div>
+            {changeAmount === 0 && (
+              <p className="mt-1.5 text-xs text-amber-600 font-medium">Adjustment amount cannot be 0.</p>
+            )}
+            {isInvalid && (
+              <p className="mt-1.5 text-xs text-rose-600 font-medium">
+                Cannot reduce stock below 0. Max reduction is -{product.quantity}.
+              </p>
+            )}
           </div>
 
           {/* Calculated Result Preview */}

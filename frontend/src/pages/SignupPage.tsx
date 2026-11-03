@@ -23,22 +23,92 @@ export const SignupPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    organizationName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { signup } = useAuth();
   const navigate = useNavigate();
 
+  const handleOrgChange = (val: string) => {
+    setOrganizationName(val);
+    if (fieldErrors.organizationName) {
+      setFieldErrors((prev) => ({ ...prev, organizationName: undefined }));
+    }
+    if (error) setError(null);
+  };
+
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (fieldErrors.email) {
+      setFieldErrors((prev) => ({ ...prev, email: undefined }));
+    }
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (val: string) => {
+    setPassword(val);
+    if (fieldErrors.password) {
+      setFieldErrors((prev) => ({ ...prev, password: undefined }));
+    }
+    if (error) setError(null);
+  };
+
+  const handleConfirmPasswordChange = (val: string) => {
+    setConfirmPassword(val);
+    if (fieldErrors.confirmPassword) {
+      setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+    }
+    if (error) setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+    const trimmedOrg = organizationName.trim();
+    const trimmedEmail = email.trim();
+    const newErrors: typeof fieldErrors = {};
+
+    if (!trimmedOrg) {
+      newErrors.organizationName = 'Organization / store name is required.';
+    } else if (trimmedOrg.length < 2) {
+      newErrors.organizationName = 'Organization name must be at least 2 characters.';
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail) {
+      newErrors.email = 'Email address is required.';
+    } else if (!emailRegex.test(trimmedEmail)) {
+      newErrors.email = 'Please provide a valid email address (e.g. name@company.com).';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required.';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters.';
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password.';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
+      setError(
+        newErrors.organizationName ||
+        newErrors.email ||
+        newErrors.password ||
+        newErrors.confirmPassword ||
+        'Please correct the highlighted errors.'
+      );
       return;
     }
 
@@ -46,14 +116,28 @@ export const SignupPage: React.FC = () => {
 
     try {
       await signup({
-        organizationName,
-        email,
+        organizationName: trimmedOrg,
+        email: trimmedEmail,
         password,
         confirmPassword,
       });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to create organization account.');
+      const msg = err.message || 'Failed to create organization account.';
+      setError(msg);
+
+      if (
+        err.status === 409 ||
+        err.field === 'email' ||
+        msg.toLowerCase().includes('already exists') ||
+        msg.toLowerCase().includes('email')
+      ) {
+        setFieldErrors({ email: msg });
+      } else if (err.field === 'organizationName' || msg.toLowerCase().includes('organization')) {
+        setFieldErrors({ organizationName: msg });
+      } else if (err.field === 'password') {
+        setFieldErrors({ password: msg });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -180,28 +264,47 @@ export const SignupPage: React.FC = () => {
               {error && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-800 text-xs">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <div className="flex-1">
+                    <span>{error}</span>
+                    {error.toLowerCase().includes('already exists') && (
+                      <div className="mt-1 text-[11px] text-rose-700">
+                        Already have an account?{' '}
+                        <Link to="/login" className="font-semibold underline hover:text-rose-900">
+                          Sign in here
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Organization / Store Name
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <Building2 className="w-4 h-4" />
+                      <Building2 className={`w-4 h-4 ${fieldErrors.organizationName ? 'text-rose-400' : 'text-slate-400'}`} />
                     </div>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. Acme Hardware"
                       value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                      className="w-full pl-10 pr-3.5 py-2.5 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400 transition"
+                      onChange={(e) => handleOrgChange(e.target.value)}
+                      className={`w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl focus:outline-none transition ${
+                        fieldErrors.organizationName
+                          ? 'bg-rose-50/30 text-rose-900 border border-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                          : 'bg-white text-slate-900 border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400'
+                      }`}
                     />
                   </div>
+                  {fieldErrors.organizationName && (
+                    <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{fieldErrors.organizationName}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -210,17 +313,26 @@ export const SignupPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <Mail className="w-4 h-4" />
+                      <Mail className={`w-4 h-4 ${fieldErrors.email ? 'text-rose-400' : 'text-slate-400'}`} />
                     </div>
                     <input
                       type="email"
-                      required
                       placeholder="owner@yourstore.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-3.5 py-2.5 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400 transition"
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      className={`w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl focus:outline-none transition ${
+                        fieldErrors.email
+                          ? 'bg-rose-50/30 text-rose-900 border border-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                          : 'bg-white text-slate-900 border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400'
+                      }`}
                     />
                   </div>
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{fieldErrors.email}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -230,15 +342,18 @@ export const SignupPage: React.FC = () => {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Lock className="w-3.5 h-3.5" />
+                        <Lock className={`w-3.5 h-3.5 ${fieldErrors.password ? 'text-rose-400' : 'text-slate-400'}`} />
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
-                        required
                         placeholder="••••••••"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-9 pr-9 py-2.5 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400 transition"
+                        onChange={(e) => handlePasswordChange(e.target.value)}
+                        className={`w-full pl-9 pr-9 py-2.5 text-sm rounded-xl focus:outline-none transition ${
+                          fieldErrors.password
+                            ? 'bg-rose-50/30 text-rose-900 border border-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                            : 'bg-white text-slate-900 border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400'
+                        }`}
                       />
                       <button
                         type="button"
@@ -249,6 +364,12 @@ export const SignupPage: React.FC = () => {
                         {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
+                    {fieldErrors.password && (
+                      <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{fieldErrors.password}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -257,17 +378,26 @@ export const SignupPage: React.FC = () => {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Lock className="w-3.5 h-3.5" />
+                        <Lock className={`w-3.5 h-3.5 ${fieldErrors.confirmPassword ? 'text-rose-400' : 'text-slate-400'}`} />
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
-                        required
                         placeholder="••••••••"
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400 transition"
+                        onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                        className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-xl focus:outline-none transition ${
+                          fieldErrors.confirmPassword
+                            ? 'bg-rose-50/30 text-rose-900 border border-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                            : 'bg-white text-slate-900 border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400'
+                        }`}
                       />
                     </div>
+                    {fieldErrors.confirmPassword && (
+                      <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{fieldErrors.confirmPassword}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 

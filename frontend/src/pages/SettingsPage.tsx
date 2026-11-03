@@ -12,6 +12,7 @@ export const SettingsPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ threshold?: string; orgName?: string }>({});
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -36,13 +37,24 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     setSuccessMsg(null);
     setErrorMsg(null);
+    setFieldErrors({});
 
-    if (threshold < 0) {
-      setErrorMsg('Default threshold cannot be negative');
-      return;
+    const newErrors: typeof fieldErrors = {};
+
+    if (threshold < 0 || isNaN(threshold)) {
+      newErrors.threshold = 'Default low stock threshold cannot be negative.';
     }
-    if (!orgName.trim()) {
-      setErrorMsg('Organization name cannot be empty');
+
+    const trimmedOrg = orgName.trim();
+    if (!trimmedOrg) {
+      newErrors.orgName = 'Organization name cannot be empty.';
+    } else if (trimmedOrg.length < 2) {
+      newErrors.orgName = 'Organization name must be at least 2 characters.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
+      setErrorMsg(newErrors.threshold || newErrors.orgName || 'Please resolve the highlighted errors.');
       return;
     }
 
@@ -50,13 +62,13 @@ export const SettingsPage: React.FC = () => {
       setIsSaving(true);
       const res = await api.updateSettings({
         defaultLowStockThreshold: threshold,
-        name: orgName.trim(),
+        name: trimmedOrg,
       });
 
       if (res.success) {
         updateOrganization({
           defaultLowStockThreshold: threshold,
-          name: orgName.trim(),
+          name: trimmedOrg,
         });
         setSuccessMsg('Settings updated successfully!');
         setTimeout(() => setSuccessMsg(null), 4000);
@@ -93,7 +105,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} noValidate className="space-y-6">
         {/* Global Inventory Alert Settings (FR-7) */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
           <div className="flex items-start gap-3">
@@ -118,11 +130,21 @@ export const SettingsPage: React.FC = () => {
                   type="number"
                   min="0"
                   step="1"
-                  required
                   value={threshold}
-                  onChange={(e) => setThreshold(parseInt(e.target.value, 10) || 0)}
-                  className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  onChange={(e) => {
+                    setThreshold(parseInt(e.target.value, 10) || 0);
+                    if (fieldErrors.threshold) setFieldErrors((p) => ({ ...p, threshold: undefined }));
+                    if (errorMsg) setErrorMsg(null);
+                  }}
+                  className={`w-full px-3.5 py-2.5 text-sm rounded-xl outline-none transition ${
+                    fieldErrors.threshold
+                      ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                      : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                 />
+                {fieldErrors.threshold && (
+                  <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.threshold}</p>
+                )}
               </div>
               <div className="mt-2 flex items-start gap-2 text-xs text-slate-500">
                 <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
@@ -156,11 +178,21 @@ export const SettingsPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                required
                 value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-                className="w-full max-w-md px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                onChange={(e) => {
+                  setOrgName(e.target.value);
+                  if (fieldErrors.orgName) setFieldErrors((p) => ({ ...p, orgName: undefined }));
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                className={`w-full max-w-md px-3.5 py-2.5 text-sm rounded-xl outline-none transition ${
+                  fieldErrors.orgName
+                    ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
+              {fieldErrors.orgName && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.orgName}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">

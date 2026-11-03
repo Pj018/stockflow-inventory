@@ -21,21 +21,77 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    if (fieldErrors.email) {
+      setFieldErrors((prev) => ({ ...prev, email: undefined }));
+    }
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (val: string) => {
+    setPassword(val);
+    if (fieldErrors.password) {
+      setFieldErrors((prev) => ({ ...prev, password: undefined }));
+    }
+    if (error) setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    const trimmedEmail = email.trim();
+    const newFieldErrors: { email?: string; password?: string } = {};
+
+    if (!trimmedEmail) {
+      newFieldErrors.email = 'Email address is required.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        newFieldErrors.email = 'Please enter a valid email address (e.g. name@company.com).';
+      }
+    }
+
+    if (!password) {
+      newFieldErrors.password = 'Password is required.';
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      setError(newFieldErrors.email || newFieldErrors.password || 'Please correct the highlighted errors.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await login({ email, password });
+      await login({ email: trimmedEmail, password });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password.');
+      const msg = err.message || 'Invalid email or password.';
+      setError(msg);
+
+      // Attribute error to field if recognized
+      if (
+        err.field === 'email' ||
+        msg.toLowerCase().includes('email') ||
+        msg.toLowerCase().includes('account found')
+      ) {
+        setFieldErrors({ email: msg });
+      } else if (
+        err.field === 'password' ||
+        msg.toLowerCase().includes('password')
+      ) {
+        setFieldErrors({ password: msg });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -45,6 +101,7 @@ export const LoginPage: React.FC = () => {
     setEmail('demo@stockflow.com');
     setPassword('password123');
     setError(null);
+    setFieldErrors({});
   };
 
   return (
@@ -168,28 +225,47 @@ export const LoginPage: React.FC = () => {
               {error && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-800 text-xs">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <div className="flex-1">
+                    <span>{error}</span>
+                    {error.includes('No account found') && (
+                      <div className="mt-1 text-[11px] text-rose-700">
+                        Don't have an organization yet?{' '}
+                        <Link to="/signup" className="font-semibold underline hover:text-rose-900">
+                          Sign up here
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Email address
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <Mail className="w-4 h-4" />
+                      <Mail className={`w-4 h-4 ${fieldErrors.email ? 'text-rose-400' : 'text-slate-400'}`} />
                     </div>
                     <input
                       type="email"
-                      required
                       placeholder="owner@yourstore.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-3.5 py-2.5 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400 transition"
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      className={`w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl focus:outline-none transition ${
+                        fieldErrors.email
+                          ? 'bg-rose-50/30 text-rose-900 border border-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                          : 'bg-white text-slate-900 border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400'
+                      }`}
                     />
                   </div>
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{fieldErrors.email}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -198,15 +274,18 @@ export const LoginPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                      <Lock className="w-4 h-4" />
+                      <Lock className={`w-4 h-4 ${fieldErrors.password ? 'text-rose-400' : 'text-slate-400'}`} />
                     </div>
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      required
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 text-sm text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400 transition"
+                      onChange={(e) => handlePasswordChange(e.target.value)}
+                      className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-xl focus:outline-none transition ${
+                        fieldErrors.password
+                          ? 'bg-rose-50/30 text-rose-900 border border-rose-300 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500'
+                          : 'bg-white text-slate-900 border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 placeholder:text-slate-400'
+                      }`}
                     />
                     <button
                       type="button"
@@ -217,6 +296,12 @@ export const LoginPage: React.FC = () => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{fieldErrors.password}</span>
+                    </p>
+                  )}
                 </div>
 
                 <button

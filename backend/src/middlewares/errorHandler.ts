@@ -37,7 +37,7 @@ export const errorHandler = (
     }));
     return res.status(400).json({
       success: false,
-      message: 'Validation failed',
+      message: formattedErrors[0]?.message || 'Validation failed',
       errors: formattedErrors,
     });
   }

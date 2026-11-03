@@ -33,6 +33,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [sellingPrice, setSellingPrice] = useState<string>('');
   const [lowStockThreshold, setLowStockThreshold] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    sku?: string;
+    quantity?: string;
+    costPrice?: string;
+    sellingPrice?: string;
+    lowStockThreshold?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -54,6 +62,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setLowStockThreshold('');
     }
     setError(null);
+    setFieldErrors({});
   }, [productToEdit, isOpen]);
 
   if (!isOpen) return null;
@@ -61,13 +70,55 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
+
+    const newErrors: typeof fieldErrors = {};
 
     if (!name.trim()) {
-      setError('Product Name is required.');
-      return;
+      newErrors.name = 'Product name is required.';
     }
-    if (!sku.trim()) {
-      setError('SKU is required.');
+
+    const trimmedSku = sku.trim().toUpperCase();
+    if (!trimmedSku) {
+      newErrors.sku = 'SKU identifier is required.';
+    }
+
+    if (quantity < 0 || isNaN(quantity)) {
+      newErrors.quantity = 'Quantity cannot be negative.';
+    }
+
+    if (costPrice.trim() !== '') {
+      const numCost = parseFloat(costPrice);
+      if (isNaN(numCost) || numCost < 0) {
+        newErrors.costPrice = 'Cost price cannot be negative.';
+      }
+    }
+
+    if (sellingPrice.trim() !== '') {
+      const numSell = parseFloat(sellingPrice);
+      if (isNaN(numSell) || numSell < 0) {
+        newErrors.sellingPrice = 'Selling price cannot be negative.';
+      }
+    }
+
+    if (lowStockThreshold.trim() !== '') {
+      const numThreshold = parseInt(lowStockThreshold, 10);
+      if (isNaN(numThreshold) || numThreshold < 0) {
+        newErrors.lowStockThreshold = 'Low stock threshold cannot be negative.';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFieldErrors(newErrors);
+      setError(
+        newErrors.name ||
+        newErrors.sku ||
+        newErrors.quantity ||
+        newErrors.costPrice ||
+        newErrors.sellingPrice ||
+        newErrors.lowStockThreshold ||
+        'Please correct the highlighted errors.'
+      );
       return;
     }
 
@@ -75,7 +126,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setIsSubmitting(true);
       await onSubmit({
         name: name.trim(),
-        sku: sku.trim().toUpperCase(),
+        sku: trimmedSku,
         description: description.trim() || undefined,
         quantity: Math.max(0, Number(quantity) || 0),
         costPrice: costPrice.trim() !== '' ? parseFloat(costPrice) : null,
@@ -84,7 +135,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       });
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to save product');
+      const msg = err.message || 'Failed to save product';
+      setError(msg);
+      if (err.status === 409 || msg.toLowerCase().includes('sku')) {
+        setFieldErrors({ sku: msg });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -112,7 +167,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="overflow-y-auto p-6 space-y-4">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -126,12 +181,22 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             </label>
             <input
               type="text"
-              required
               placeholder="e.g., Wireless Mechanical Keyboard"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              onChange={(e) => {
+                setName(e.target.value);
+                if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
+                if (error) setError(null);
+              }}
+              className={`w-full px-3.5 py-2 text-sm rounded-lg outline-none transition ${
+                fieldErrors.name
+                  ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                  : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              }`}
             />
+            {fieldErrors.name && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.name}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -141,13 +206,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               </label>
               <input
                 type="text"
-                required
                 placeholder="e.g., KBD-WL-01"
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm uppercase font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                onChange={(e) => {
+                  setSku(e.target.value);
+                  if (fieldErrors.sku) setFieldErrors((p) => ({ ...p, sku: undefined }));
+                  if (error) setError(null);
+                }}
+                className={`w-full px-3.5 py-2 text-sm uppercase font-mono rounded-lg outline-none transition ${
+                  fieldErrors.sku
+                    ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
-              <span className="text-[11px] text-slate-400">Unique to your store</span>
+              {fieldErrors.sku ? (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.sku}</p>
+              ) : (
+                <span className="text-[11px] text-slate-400">Unique to your store</span>
+              )}
             </div>
 
             <div>
@@ -159,10 +235,22 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 min="0"
                 step="1"
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 0)}
-                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                onChange={(e) => {
+                  setQuantity(parseInt(e.target.value, 10) || 0);
+                  if (fieldErrors.quantity) setFieldErrors((p) => ({ ...p, quantity: undefined }));
+                  if (error) setError(null);
+                }}
+                className={`w-full px-3.5 py-2 text-sm rounded-lg outline-none transition ${
+                  fieldErrors.quantity
+                    ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
-              <span className="text-[11px] text-slate-400">Initial units in stock</span>
+              {fieldErrors.quantity ? (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.quantity}</p>
+              ) : (
+                <span className="text-[11px] text-slate-400">Initial units in stock</span>
+              )}
             </div>
           </div>
 
@@ -177,9 +265,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 min="0"
                 placeholder="0.00"
                 value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                onChange={(e) => {
+                  setCostPrice(e.target.value);
+                  if (fieldErrors.costPrice) setFieldErrors((p) => ({ ...p, costPrice: undefined }));
+                  if (error) setError(null);
+                }}
+                className={`w-full px-3.5 py-2 text-sm rounded-lg outline-none transition ${
+                  fieldErrors.costPrice
+                    ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
+              {fieldErrors.costPrice && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.costPrice}</p>
+              )}
             </div>
 
             <div>
@@ -192,9 +291,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 min="0"
                 placeholder="0.00"
                 value={sellingPrice}
-                onChange={(e) => setSellingPrice(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                onChange={(e) => {
+                  setSellingPrice(e.target.value);
+                  if (fieldErrors.sellingPrice) setFieldErrors((p) => ({ ...p, sellingPrice: undefined }));
+                  if (error) setError(null);
+                }}
+                className={`w-full px-3.5 py-2 text-sm rounded-lg outline-none transition ${
+                  fieldErrors.sellingPrice
+                    ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                }`}
               />
+              {fieldErrors.sellingPrice && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.sellingPrice}</p>
+              )}
             </div>
           </div>
 
@@ -208,12 +318,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               step="1"
               placeholder={`Org Default: ${defaultThreshold}`}
               value={lowStockThreshold}
-              onChange={(e) => setLowStockThreshold(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              onChange={(e) => {
+                setLowStockThreshold(e.target.value);
+                if (fieldErrors.lowStockThreshold) setFieldErrors((p) => ({ ...p, lowStockThreshold: undefined }));
+                if (error) setError(null);
+              }}
+              className={`w-full px-3.5 py-2 text-sm rounded-lg outline-none transition ${
+                fieldErrors.lowStockThreshold
+                  ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
+                  : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+              }`}
             />
-            <span className="text-[11px] text-slate-400">
-              Leave blank to use organization default ({defaultThreshold} units)
-            </span>
+            {fieldErrors.lowStockThreshold ? (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.lowStockThreshold}</p>
+            ) : (
+              <span className="text-[11px] text-slate-400">
+                Leave blank to use organization default ({defaultThreshold} units)
+              </span>
+            )}
           </div>
 
           <div>
