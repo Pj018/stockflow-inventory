@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Package,
   Layers,
-  DollarSign,
+  IndianRupee,
   AlertTriangle,
   ArrowRight,
   Plus,
@@ -127,15 +127,15 @@ export const DashboardPage: React.FC = () => {
 
         <StatCard
           title="Inventory Cost Value"
-          value={`$${(data?.summary.totalCostValuation ?? 0).toLocaleString(undefined, {
+          value={`₹${(data?.summary.totalCostValuation ?? 0).toLocaleString('en-IN', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}`}
-          subtitle={`Selling value: $${(data?.summary.totalSellingValuation ?? 0).toLocaleString(
-            undefined,
+          subtitle={`Selling value: ₹${(data?.summary.totalSellingValuation ?? 0).toLocaleString(
+            'en-IN',
             { minimumFractionDigits: 2, maximumFractionDigits: 2 }
           )}`}
-          icon={<DollarSign className="w-6 h-6" />}
+          icon={<IndianRupee className="w-6 h-6" />}
           variant="default"
         />
       </div>
@@ -199,7 +199,10 @@ export const DashboardPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right text-slate-700">
                       {item.sellingPrice !== null && item.sellingPrice !== undefined
-                        ? `$${Number(item.sellingPrice).toFixed(2)}`
+                        ? `₹${Number(item.sellingPrice).toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
                         : '—'}
                     </td>
                     <td className="px-6 py-4 text-right">

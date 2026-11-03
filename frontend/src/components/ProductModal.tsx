@@ -169,7 +169,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Cost Price ($)
+                Cost Price (₹)
               </label>
               <input
                 type="number"
@@ -184,7 +184,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                Selling Price ($)
+                Selling Price (₹)
               </label>
               <input
                 type="number"

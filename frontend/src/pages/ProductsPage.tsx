@@ -240,13 +240,19 @@ export const ProductsPage: React.FC = () => {
 
                     <td className="px-6 py-4 text-right text-slate-600">
                       {p.costPrice !== null && p.costPrice !== undefined
-                        ? `$${Number(p.costPrice).toFixed(2)}`
+                        ? `₹${Number(p.costPrice).toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
                         : '—'}
                     </td>
 
                     <td className="px-6 py-4 text-right font-medium text-slate-900">
                       {p.sellingPrice !== null && p.sellingPrice !== undefined
-                        ? `$${Number(p.sellingPrice).toFixed(2)}`
+                        ? `₹${Number(p.sellingPrice).toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
                         : '—'}
                     </td>
 
