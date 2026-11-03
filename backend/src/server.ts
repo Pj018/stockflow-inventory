@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { ENV } from './config/env';
 import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
@@ -34,7 +36,20 @@ app.use('/api/products', productRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 
-// 404 Route Handler
+// Serve compiled frontend SPA if dist exists
+const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      return res.sendFile(path.join(frontendDistPath, 'index.html'));
+    }
+    next();
+  });
+}
+
+// 404 Route Handler for unhandled API endpoints
 app.use((_req, res) => {
   res.status(404).json({
     success: false,
