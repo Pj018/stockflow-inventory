@@ -101,7 +101,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
               Quick Increment / Decrement
             </label>
-            <div className="grid grid-cols-6 gap-1.5 text-xs font-semibold">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setAmount(-10)}
