@@ -19,7 +19,15 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
-  console.error('[API Error]:', err);
+  if (process.env.NODE_ENV !== 'test') {
+    if (err instanceof AppError && err.statusCode < 500) {
+      console.warn(`[Client ${err.statusCode}]: ${err.message}`);
+    } else if (err instanceof ZodError) {
+      console.warn('[Validation Error]: Invalid request payload');
+    } else {
+      console.error('[Internal Server Error]:', err);
+    }
+  }
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
