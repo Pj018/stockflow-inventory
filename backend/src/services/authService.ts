@@ -74,12 +74,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new AppError('No account found with this email address. Please check your spelling or sign up.', 401, { field: 'email' });
+      throw new AppError('Invalid email or password. Please verify your credentials.', 401);
     }
 
     const isMatch = await bcrypt.compare(input.password, user.password);
     if (!isMatch) {
-      throw new AppError('Incorrect password. Please verify your password and try again.', 401, { field: 'password' });
+      throw new AppError('Invalid email or password. Please verify your credentials.', 401);
     }
 
     const token = jwt.sign(

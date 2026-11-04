@@ -2,13 +2,17 @@ import { z } from 'zod';
 
 export const signupSchema = z
   .object({
-    email: z.string().email('Please provide a valid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters long'),
-    confirmPassword: z.string().min(6, 'Confirm password must be at least 6 characters long'),
+    email: z.string().trim().email('Please provide a valid email address').max(255),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters long')
+      .max(72, 'Password must not exceed 72 characters'),
+    confirmPassword: z.string(),
     organizationName: z
       .string()
       .trim()
-      .min(2, 'Organization name must be at least 2 characters'),
+      .min(2, 'Organization name must be at least 2 characters')
+      .max(100, 'Organization name must not exceed 100 characters'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -16,8 +20,8 @@ export const signupSchema = z
   });
 
 export const loginSchema = z.object({
-  email: z.string().email('Please provide a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().trim().email('Please provide a valid email address').max(255),
+  password: z.string().min(1, 'Password is required').max(72),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

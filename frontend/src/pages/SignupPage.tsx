@@ -90,8 +90,8 @@ export const SignupPage: React.FC = () => {
 
     if (!password) {
       newErrors.password = 'Password is required.';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters.';
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters.';
     }
 
     if (!confirmPassword) {
