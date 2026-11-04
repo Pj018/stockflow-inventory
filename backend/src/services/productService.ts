@@ -1,13 +1,17 @@
 import { prisma } from '../lib/prisma';
 import { AppError } from '../middlewares/errorHandler';
-import { CreateProductInput, UpdateProductInput } from '../validators/productValidator';
+import {
+  CreateProductInput,
+  UpdateProductInput,
+  BulkImportInput,
+} from '../validators/productValidator';
 
 export class ProductService {
   static async getProducts(organizationId: string, search?: string, lowStockOnly = false) {
     // Retrieve organization default threshold
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
-      select: { defaultLowStockThreshold: true },
+      select: { defaultLowStockThreshold: true, currencySymbol: true },
     });
     const defaultThreshold = org?.defaultLowStockThreshold ?? 5;
 
@@ -21,6 +25,8 @@ export class ProductService {
       whereClause.OR = [
         { name: { contains: q } },
         { sku: { contains: q } },
+        { barcode: { contains: q } },
+        { category: { contains: q } },
       ];
     }
 
@@ -28,6 +34,9 @@ export class ProductService {
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
+        supplier: {
+          select: { id: true, name: true, phone: true },
+        },
         stockLogs: {
           take: 3,
           orderBy: { createdAt: 'desc' },
@@ -60,8 +69,9 @@ export class ProductService {
     const product = await prisma.product.findFirst({
       where: { id, organizationId },
       include: {
+        supplier: true,
         stockLogs: {
-          take: 10,
+          take: 15,
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -73,7 +83,7 @@ export class ProductService {
 
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
-      select: { defaultLowStockThreshold: true },
+      select: { defaultLowStockThreshold: true, currencySymbol: true },
     });
     const effectiveThreshold =
       product.lowStockThreshold ?? org?.defaultLowStockThreshold ?? 5;
@@ -111,11 +121,14 @@ export class ProductService {
         organizationId,
         name: data.name.trim(),
         sku: trimmedSku,
+        barcode: data.barcode?.trim() || trimmedSku,
+        category: data.category?.trim() || 'General',
         description: data.description ? data.description.trim() : null,
         quantity: data.quantity ?? 0,
         costPrice: data.costPrice ?? null,
         sellingPrice: data.sellingPrice ?? null,
         lowStockThreshold: data.lowStockThreshold ?? null,
+        supplierId: data.supplierId || null,
         lastUpdatedBy: userEmail,
       },
     });
@@ -177,11 +190,14 @@ export class ProductService {
         data: {
           name: data.name !== undefined ? data.name.trim() : undefined,
           sku: data.sku !== undefined ? data.sku.trim() : undefined,
+          barcode: data.barcode !== undefined ? data.barcode?.trim() : undefined,
+          category: data.category !== undefined ? data.category?.trim() : undefined,
           description: data.description !== undefined ? data.description : undefined,
           quantity: data.quantity !== undefined ? data.quantity : undefined,
           costPrice: data.costPrice !== undefined ? data.costPrice : undefined,
           sellingPrice: data.sellingPrice !== undefined ? data.sellingPrice : undefined,
           lowStockThreshold: data.lowStockThreshold !== undefined ? data.lowStockThreshold : undefined,
+          supplierId: data.supplierId !== undefined ? data.supplierId : undefined,
           lastUpdatedBy: userEmail,
         },
       });
@@ -256,6 +272,92 @@ export class ProductService {
     });
 
     return result;
+  }
+
+  static async bulkImport(organizationId: string, input: BulkImportInput, userEmail: string) {
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of input.products) {
+        const sku = item.sku.trim();
+        const existing = await tx.product.findUnique({
+          where: { organizationId_sku: { organizationId, sku } },
+        });
+
+        if (existing) {
+          const qtyDiff = item.quantity - existing.quantity;
+          await tx.product.update({
+            where: { id: existing.id },
+            data: {
+              name: item.name.trim(),
+              description: item.description !== undefined ? item.description : existing.description,
+              quantity: item.quantity,
+              costPrice: item.costPrice !== undefined ? item.costPrice : existing.costPrice,
+              sellingPrice: item.sellingPrice !== undefined ? item.sellingPrice : existing.sellingPrice,
+              lowStockThreshold:
+                item.lowStockThreshold !== undefined ? item.lowStockThreshold : existing.lowStockThreshold,
+              category: item.category || existing.category,
+              barcode: item.barcode || existing.barcode,
+              lastUpdatedBy: userEmail,
+            },
+          });
+
+          if (qtyDiff !== 0) {
+            await tx.stockLog.create({
+              data: {
+                organizationId,
+                productId: existing.id,
+                changeAmount: qtyDiff,
+                previousQty: existing.quantity,
+                newQty: item.quantity,
+                note: 'Bulk CSV Import update',
+                updatedBy: userEmail,
+              },
+            });
+          }
+          updatedCount++;
+        } else {
+          const newProd = await tx.product.create({
+            data: {
+              organizationId,
+              name: item.name.trim(),
+              sku,
+              barcode: item.barcode?.trim() || sku,
+              category: item.category?.trim() || 'General',
+              description: item.description ? item.description.trim() : null,
+              quantity: item.quantity ?? 0,
+              costPrice: item.costPrice ?? null,
+              sellingPrice: item.sellingPrice ?? null,
+              lowStockThreshold: item.lowStockThreshold ?? null,
+              lastUpdatedBy: userEmail,
+            },
+          });
+
+          if (newProd.quantity > 0) {
+            await tx.stockLog.create({
+              data: {
+                organizationId,
+                productId: newProd.id,
+                changeAmount: newProd.quantity,
+                previousQty: 0,
+                newQty: newProd.quantity,
+                note: 'Bulk CSV Import entry',
+                updatedBy: userEmail,
+              },
+            });
+          }
+          createdCount++;
+        }
+      }
+    });
+
+    return {
+      success: true,
+      totalProcessed: input.products.length,
+      created: createdCount,
+      updated: updatedCount,
+    };
   }
 
   static async deleteProduct(id: string, organizationId: string) {

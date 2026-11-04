@@ -1,4 +1,4 @@
-import { Product, DashboardMetrics, Organization, User } from '../types';
+import { Product, DashboardMetrics, Organization, User, Order, Supplier } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -42,7 +42,7 @@ class ApiClient {
     let data: any;
     try {
       data = await response.json();
-    } catch (err) {
+    } catch {
       data = { message: 'Failed to parse server response' };
     }
 
@@ -124,11 +124,14 @@ class ApiClient {
   async createProduct(payload: {
     name: string;
     sku: string;
+    barcode?: string | null;
+    category?: string | null;
     description?: string | null;
     quantity: number;
     costPrice?: number | null;
     sellingPrice?: number | null;
     lowStockThreshold?: number | null;
+    supplierId?: string | null;
   }) {
     return this.request<{
       success: boolean;
@@ -145,11 +148,14 @@ class ApiClient {
     payload: {
       name?: string;
       sku?: string;
+      barcode?: string | null;
+      category?: string | null;
       description?: string | null;
       quantity?: number;
       costPrice?: number | null;
       sellingPrice?: number | null;
       lowStockThreshold?: number | null;
+      supplierId?: string | null;
     }
   ) {
     return this.request<{
@@ -176,11 +182,121 @@ class ApiClient {
     });
   }
 
+  async bulkImportProducts(products: Array<{
+    name: string;
+    sku: string;
+    barcode?: string | null;
+    category?: string | null;
+    description?: string | null;
+    quantity: number;
+    costPrice?: number | null;
+    sellingPrice?: number | null;
+    lowStockThreshold?: number | null;
+  }>) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      data: { totalProcessed: number; created: number; updated: number };
+    }>('/products/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({ products }),
+    });
+  }
+
   async deleteProduct(id: string) {
     return this.request<{
       success: boolean;
       message: string;
     }>(`/products/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // POS & Order Endpoints
+  async getOrders() {
+    return this.request<{
+      success: boolean;
+      count: number;
+      data: Order[];
+    }>('/orders');
+  }
+
+  async getOrder(id: string) {
+    return this.request<{
+      success: boolean;
+      data: Order;
+    }>(`/orders/${id}`);
+  }
+
+  async createOrder(payload: {
+    customerName?: string;
+    customerPhone?: string;
+    paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'OTHER';
+    discountAmount?: number;
+    taxAmount?: number;
+    items: Array<{ productId: string; quantity: number; unitPrice?: number }>;
+  }) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      data: Order;
+    }>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Supplier Endpoints
+  async getSuppliers() {
+    return this.request<{
+      success: boolean;
+      count: number;
+      data: Supplier[];
+    }>('/suppliers');
+  }
+
+  async createSupplier(payload: {
+    name: string;
+    contactPerson?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+  }) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      data: Supplier;
+    }>('/suppliers', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateSupplier(
+    id: string,
+    payload: {
+      name?: string;
+      contactPerson?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      address?: string | null;
+    }
+  ) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      data: Supplier;
+    }>(`/suppliers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteSupplier(id: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/suppliers/${id}`, {
       method: 'DELETE',
     });
   }
@@ -196,6 +312,12 @@ class ApiClient {
   async updateSettings(payload: {
     defaultLowStockThreshold?: number;
     name?: string;
+    currency?: string;
+    currencySymbol?: string;
+    taxRate?: number;
+    phone?: string | null;
+    address?: string | null;
+    invoiceFooter?: string | null;
   }) {
     return this.request<{
       success: boolean;

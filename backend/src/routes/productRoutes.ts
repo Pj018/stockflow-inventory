@@ -8,6 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', ProductController.getProducts);
+router.post('/bulk-import', ProductController.bulkImport);
 router.post('/', ProductController.createProduct);
 router.get('/:id', ProductController.getProductById);
 router.put('/:id', ProductController.updateProduct);

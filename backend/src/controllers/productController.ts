@@ -4,6 +4,7 @@ import {
   createProductSchema,
   updateProductSchema,
   adjustStockSchema,
+  bulkImportSchema,
 } from '../validators/productValidator';
 
 export class ProductController {
@@ -119,6 +120,23 @@ export class ProductController {
       return res.status(200).json({
         success: true,
         message: result.message,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async bulkImport(req: Request, res: Response, next: NextFunction) {
+    try {
+      const organizationId = req.organizationId!;
+      const userEmail = req.user?.email || 'Store Staff';
+      const validated = bulkImportSchema.parse(req.body);
+
+      const result = await ProductService.bulkImport(organizationId, validated, userEmail);
+      return res.status(200).json({
+        success: true,
+        message: `Successfully imported ${result.totalProcessed} products (${result.created} created, ${result.updated} updated)`,
+        data: result,
       });
     } catch (error) {
       next(error);

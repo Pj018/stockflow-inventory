@@ -8,15 +8,27 @@ export class DashboardService {
         id: true,
         name: true,
         defaultLowStockThreshold: true,
+        currencySymbol: true,
+        currency: true,
+        taxRate: true,
       },
     });
 
     const defaultThreshold = org?.defaultLowStockThreshold ?? 5;
 
-    const products = await prisma.product.findMany({
-      where: { organizationId },
-      orderBy: { updatedAt: 'desc' },
-    });
+    const [products, orders] = await Promise.all([
+      prisma.product.findMany({
+        where: { organizationId },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.order.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          items: true,
+        },
+      }),
+    ]);
 
     const totalProducts = products.length;
 
@@ -54,6 +66,22 @@ export class DashboardService {
       }
     }
 
+    // Calculate Sales & Revenue metrics
+    const totalOrdersCount = orders.length;
+    let totalRevenue = 0;
+    let totalEstimatedCOGS = 0;
+
+    for (const order of orders) {
+      totalRevenue += order.totalAmount;
+      for (const item of order.items) {
+        if (item.costPrice !== null && item.costPrice !== undefined) {
+          totalEstimatedCOGS += item.costPrice * item.quantity;
+        }
+      }
+    }
+
+    const estimatedGrossProfit = totalRevenue - totalEstimatedCOGS;
+
     return {
       organization: org,
       summary: {
@@ -62,9 +90,13 @@ export class DashboardService {
         totalCostValuation: Math.round(totalCostValuation * 100) / 100,
         totalSellingValuation: Math.round(totalSellingValuation * 100) / 100,
         lowStockCount: lowStockItems.length,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalOrdersCount,
+        estimatedGrossProfit: Math.round(estimatedGrossProfit * 100) / 100,
       },
       lowStockItems,
       recentProducts: products.slice(0, 5),
+      recentOrders: orders.slice(0, 5),
     };
   }
 }

@@ -1,119 +1,109 @@
-# StockFlow MVP - Multi-Tenant SaaS Inventory Management System
+# StockFlow Pro - Commercial Multi-Tenant SaaS Inventory & POS Billing Platform
 
-StockFlow is a production-grade multi-tenant SaaS inventory tracking system designed with strict tenant data isolation, secure authentication, real-time stock valuation, and automated testing.
-
----
-
-## Key Features
-
-- **Multi-Tenancy & Data Isolation (FR-1, FR-2)**:
-  - Complete tenant partitioning: Every resource (users, products, stock audit logs, settings) is scoped by `organizationId`.
-  - Zero cross-tenant data leakage: Guaranteed and verified by automated integration test suites.
-  - Organization-scoped SKU uniqueness: Composite database index `@@unique([organizationId, sku])` permits separate tenants to use identical SKUs without collision.
-
-- **Enterprise Security Practices**:
-  - **OWASP User Enumeration Defense**: Generic credential error responses prevent attacker discovery of registered user accounts.
-  - **Rate Limiting**: `express-rate-limit` protects authentication endpoints (`/api/auth/*`) from brute-force and credential stuffing attacks.
-  - **HTTP Security Headers**: `helmet` enforces protective HTTP headers across all API endpoints.
-  - **Password Security**: Strong hashing with `bcryptjs` (10 rounds), length restrictions (8 to 72 characters) to guard against bcrypt DoS attacks.
-  - **Fail-Safe Secrets**: Production guard prevents booting with unconfigured or default JWT secrets.
-
-- **Inventory Tracking & Audit Logging (FR-3, FR-4, FR-5)**:
-  - Full CRUD operations with server-side validation via Zod.
-  - Inline stock adjustment with negative inventory prevention.
-  - Immutable audit logs (`StockLog`) capturing previous quantity, new quantity, change delta, optional notes, and user attribution.
-  - Dynamic low-stock threshold resolution: Falls back to organization default when product threshold is unspecified.
-
-- **Actionable Metrics & Dashboard (FR-6)**:
-  - High-level KPIs: Total Products, Total Units on Hand, Inventory Valuation (Cost & Selling), Low Stock Count.
-  - Filtered table highlighting low-stock items with direct restock triggers.
+StockFlow is a production-ready, commercial-grade multi-tenant SaaS inventory management and Point-of-Sale (POS) platform designed for small-to-medium retail stores, warehouses, and wholesalers.
 
 ---
 
-## Architecture & Code Organization
+## 🚀 Commercial Features (Client-Ready)
+
+### 1. Point of Sale (POS) Counter & Fast Billing
+- **Real-Time Barcode Scanner Support**: Tap or scan products by barcode or SKU with keyboard / hardware scanner support to instantly populate customer carts.
+- **Dynamic Cart Register**: Line item quantity controls, real-time stock balance validation (prevents overselling).
+- **Payment Method Flexibility**: Support for Cash, UPI / QR, Card, and Credit sales.
+- **Automated Inventory Deduction**: Every completed sale automatically deducts product inventory in an atomic transaction and generates a `StockLog` audit trail.
+- **Printable Thermal / Standard Invoices**: Instant receipt modal with store branding, phone, address, tax breakdown, and customizable invoice footer.
+
+### 2. Barcode & QR Code Label Generation
+- Generate printable Code128 barcode labels for shelf stickers and product packaging with store name, SKU, price, and barcode graphic.
+- One-click print label dialog formatted for thermal sticker printers.
+
+### 3. Bulk CSV Product Import & Export
+- **One-Click Catalog Export**: Download complete inventory spreadsheets with SKUs, valuations, and stock statuses.
+- **Bulk CSV Importer**: Drag-and-drop CSV importer with downloadable sample templates to onboard 500+ products in seconds with automatic upserting.
+
+### 4. Supplier & Vendor Management
+- Directory of wholesale vendors, distributors, contact persons, phone numbers, and addresses.
+- Track SKUs supplied per vendor.
+
+### 5. Multi-Currency, GST/VAT & Store Branding
+- Configurable currency symbols (`₹`, `$`, `€`, `£`, `AED`).
+- Auto-calculated GST / VAT tax percentages on POS sales.
+- Custom invoice headers, store physical address, and footer greetings.
+
+### 6. Sales Analytics & Profit Tracking
+- Real-time revenue aggregates, average order value, estimated gross margins, and customer order history.
+
+---
+
+## 🔒 Security Architecture
+
+- **OWASP User Enumeration Defense**: Identical generic error responses prevent attacker discovery of registered user emails.
+- **Rate Limiting**: `express-rate-limit` shields authentication routes from brute-force credential stuffing.
+- **HTTP Security Headers**: `helmet` enforces protective headers across all endpoints.
+- **Password Protection**: Hashing with `bcryptjs` (10 rounds) and 8-to-72 character enforcement to prevent bcrypt DoS.
+- **Tenant Partitioning**: Strict `organizationId` scoping across all tables and composite uniqueness indexes (`[organizationId, sku]`).
+
+---
+
+## Architecture & Code Structure
 
 ```
 VSFU/
 ├── backend/                       # Node.js + Express + Prisma (TypeScript)
-│   ├── prisma/                    # Prisma Schema & Database Migrations
-│   │   ├── schema.prisma          # Relational schema with composite indexes
-│   │   └── seed.ts                # Preloaded enterprise demo data
+│   ├── prisma/                    # Schema with Orders, OrderItems, Suppliers, Products
 │   ├── src/
 │   │   ├── config/                # Environment configuration with fail-fast guards
-│   │   ├── controllers/           # HTTP Request & Response handlers
+│   │   ├── controllers/           # Auth, Product, POS Order, Supplier, Settings
 │   │   ├── middlewares/           # JWT verification, rate limiting, error handler
 │   │   ├── routes/                # Typed REST route definitions
 │   │   ├── services/              # Pure business logic & multi-tenant isolation
-│   │   ├── validators/            # Zod schemas for input validation
+│   │   ├── validators/            # Zod input schemas
 │   │   ├── app.ts                 # Decoupled Express app (exportable for tests)
 │   │   └── server.ts              # Server lifecycle & graceful shutdown
 │   └── tests/                     # Automated Test Suites (Vitest + Supertest)
-│       ├── setup.ts               # Test lifecycle & Prisma connection management
 │       ├── auth.test.ts           # Authentication & enumeration tests
 │       ├── multitenancy.test.ts   # Multi-tenant boundary isolation tests
-│       └── inventory.test.ts      # Product CRUD, stock adjustments & audit tests
+│       ├── inventory.test.ts      # Product CRUD, stock adjustments & audit tests
+│       └── pos_orders.test.ts     # POS billing, stock deductions & bulk import tests
 ├── frontend/                      # React 18 + Vite (TypeScript)
 │   └── src/
-│       ├── api/                   # Strongly typed REST client
-│       ├── components/            # Reusable UI widgets & modal dialogs
-│       ├── context/               # AuthContext & session management
-│       ├── pages/                 # Login, Signup, Dashboard, Products, Settings
+│       ├── api/                   # Strongly typed REST client (Products, Orders, Suppliers)
+│       ├── components/            # BarcodeModal, BulkImportModal, ProductDetailModal, Layout
+│       ├── pages/
+│       │   ├── DashboardPage.tsx  # Revenue metrics & alert overview
+│       │   ├── ProductsPage.tsx   # Catalog, sorting, CSV export, barcode actions
+│       │   ├── PosBillingPage.tsx # Point of Sale checkout & bill printing
+│       │   ├── OrdersHistoryPage.tsx # Completed sales & invoice reprints
+│       │   ├── SuppliersPage.tsx  # Wholesale vendor directory
+│       │   └── SettingsPage.tsx   # Store profile, tax rates & currency
 │       └── App.tsx                # App routing & protected route guards
-└── scripts/                       # Supplementary manual verification scripts
-```
-
----
-
-## Quick Start / Running Locally
-
-### 1. Pre-requisites
-- Node.js v18+ (tested on Node.js v24 LTS)
-- npm
-
-### 2. Install & Start Everything (One Command)
-```bash
-# Install dependencies, generate Prisma client, push schema, seed DB, and build
-npm run dev
-```
-
-Alternatively, run backend and frontend independently:
-
-```bash
-# Backend
-cd backend
-npm install
-npx prisma db push
-npx tsx prisma/seed.ts
-npm run dev               # Runs on http://localhost:5000
-
-# Frontend
-cd frontend
-npm install
-npm run dev               # Runs on http://localhost:3000
 ```
 
 ---
 
 ## Automated Testing Suite
 
-StockFlow features a self-contained, in-memory automated test suite powered by **Vitest** and **Supertest**. Tests run against isolated databases without requiring manual server execution:
+StockFlow features 27 automated integration tests powered by **Vitest** and **Supertest**:
 
 ```bash
-# Run all automated tests from repository root
+# Run all tests from root
 npm test
 ```
 
-### Test Coverage Highlights:
-- **`auth.test.ts`**: Verifies tenant registration, duplicate email rejection (409), password strength enforcement, generic error responses against account enumeration (401), and JWT profile resolution.
-- **`multitenancy.test.ts`**: Confirms that Tenant A and Tenant B cannot view, edit, adjust stock, or delete each other's resources, while allowing identical SKUs across tenants without collision.
-- **`inventory.test.ts`**: Verifies product CRUD, SKU uniqueness within an organization, positive/negative stock adjustments, audit log generation, and negative stock prevention.
-
 ---
 
-## Preloaded Demo Account
+## Running Locally
 
-For rapid evaluation and testing without creating a new store:
+```bash
+# 1. Install & build
+npm install
+npm run build
+
+# 2. Start development servers
+npm run dev
+```
+
+### Preloaded Demo Account:
 - **Email**: `demo@stockflow.com`
 - **Password**: `password123`
 - **Organization**: `Acme Supply Co.`
-*(Preloaded with healthy inventory, low-stock alerts, and sample stock audit logs)*

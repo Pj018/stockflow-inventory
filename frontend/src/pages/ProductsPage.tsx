@@ -17,6 +17,8 @@ import {
   ArrowDown,
   AlertOctagon,
   Layers,
+  Barcode,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Product } from '../types';
@@ -25,6 +27,8 @@ import { ProductModal } from '../components/ProductModal';
 import { StockAdjustModal } from '../components/StockAdjustModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { ProductDetailModal } from '../components/ProductDetailModal';
+import { BarcodeModal } from '../components/BarcodeModal';
+import { BulkImportModal } from '../components/BulkImportModal';
 import { useAuth } from '../context/AuthContext';
 
 type SortField = 'name' | 'sku' | 'quantity' | 'sellingPrice' | 'createdAt';
@@ -55,6 +59,8 @@ export const ProductsPage: React.FC = () => {
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -132,6 +138,8 @@ export const ProductsPage: React.FC = () => {
     const headers = [
       'Name',
       'SKU',
+      'Barcode',
+      'Category',
       'Description',
       'Quantity',
       'Stock Status',
@@ -145,6 +153,8 @@ export const ProductsPage: React.FC = () => {
     const rows = processedProducts.map((p) => [
       `"${p.name.replace(/"/g, '""')}"`,
       `"${p.sku}"`,
+      `"${p.barcode || p.sku}"`,
+      `"${p.category || 'General'}"`,
       `"${(p.description || '').replace(/"/g, '""')}"`,
       p.quantity,
       p.quantity === 0 ? 'Out of Stock' : p.isLowStock ? 'Low Stock' : 'In Stock',
@@ -227,11 +237,20 @@ export const ProductsPage: React.FC = () => {
             Inventory Catalog
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage your store items, SKUs, inventory levels, and pricing.
+            Manage your store items, barcodes, inventory levels, and pricing.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsBulkImportOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition shadow-sm"
+            title="Bulk import products from CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">Bulk Import</span>
+          </button>
+
           <button
             onClick={handleExportCSV}
             disabled={processedProducts.length === 0}
@@ -261,7 +280,7 @@ export const ProductsPage: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name or SKU..."
+            placeholder="Search by name, SKU, or barcode..."
             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
           />
         </form>
@@ -373,7 +392,7 @@ export const ProductsPage: React.FC = () => {
                     className="px-6 py-3.5 text-right cursor-pointer hover:bg-slate-100/75 transition select-none"
                   >
                     <div className="flex items-center justify-end gap-1.5">
-                      <span>Quantity on Hand</span>
+                      <span>Quantity</span>
                       {sortField === 'quantity' && (
                         sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
                       )}
@@ -468,6 +487,14 @@ export const ProductsPage: React.FC = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => setBarcodeProduct(p)}
+                          title="Print Barcode Label"
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                        >
+                          <Barcode className="w-4 h-4" />
+                        </button>
+
+                        <button
                           onClick={() => openDetailModal(p)}
                           title="View product details & history"
                           className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
@@ -512,15 +539,24 @@ export const ProductsPage: React.FC = () => {
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
               {searchTerm || statusFilter !== 'all'
                 ? 'Try clearing your search term or active filters to view all products.'
-                : 'Get started by creating your very first inventory product.'}
+                : 'Get started by creating your very first inventory product or importing a CSV file.'}
             </p>
-            <button
-              onClick={openCreateModal}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add First Product
-            </button>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Product
+              </button>
+              <button
+                onClick={() => setIsBulkImportOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl transition"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                Import CSV
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -547,6 +583,18 @@ export const ProductsPage: React.FC = () => {
         onClose={() => setDetailProduct(null)}
         onAdjustStock={(p) => setAdjustingProduct(p)}
         onEdit={(p) => openEditModal(p)}
+      />
+
+      <BarcodeModal
+        isOpen={!!barcodeProduct}
+        product={barcodeProduct}
+        onClose={() => setBarcodeProduct(null)}
+      />
+
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onSuccess={fetchProducts}
       />
 
       <DeleteConfirmModal

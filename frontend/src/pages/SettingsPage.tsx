@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Building2, Save, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import {
+  Sliders,
+  Building2,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  IndianRupee,
+  Receipt,
+  Phone,
+  MapPin,
+  Percent,
+} from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,11 +19,16 @@ export const SettingsPage: React.FC = () => {
 
   const [threshold, setThreshold] = useState<number>(5);
   const [orgName, setOrgName] = useState<string>('');
+  const [currencySymbol, setCurrencySymbol] = useState<string>('₹');
+  const [taxRate, setTaxRate] = useState<number>(0);
+  const [phone, setPhone] = useState<string>('');
+  const [address, setAddress] = useState<string>('');
+  const [invoiceFooter, setInvoiceFooter] = useState<string>('');
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ threshold?: string; orgName?: string }>({});
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -22,6 +38,11 @@ export const SettingsPage: React.FC = () => {
         if (res.success && res.data) {
           setThreshold(res.data.defaultLowStockThreshold);
           setOrgName(res.data.name);
+          setCurrencySymbol(res.data.currencySymbol || '₹');
+          setTaxRate(res.data.taxRate || 0);
+          setPhone(res.data.phone || '');
+          setAddress(res.data.address || '');
+          setInvoiceFooter(res.data.invoiceFooter || 'Thank you for your business!');
         }
       } catch (err: any) {
         setErrorMsg(err.message || 'Failed to load settings');
@@ -37,24 +58,10 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     setSuccessMsg(null);
     setErrorMsg(null);
-    setFieldErrors({});
-
-    const newErrors: typeof fieldErrors = {};
-
-    if (threshold < 0 || isNaN(threshold)) {
-      newErrors.threshold = 'Default low stock threshold cannot be negative.';
-    }
 
     const trimmedOrg = orgName.trim();
-    if (!trimmedOrg) {
-      newErrors.orgName = 'Organization name cannot be empty.';
-    } else if (trimmedOrg.length < 2) {
-      newErrors.orgName = 'Organization name must be at least 2 characters.';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setFieldErrors(newErrors);
-      setErrorMsg(newErrors.threshold || newErrors.orgName || 'Please resolve the highlighted errors.');
+    if (!trimmedOrg || trimmedOrg.length < 2) {
+      setErrorMsg('Organization name must be at least 2 characters.');
       return;
     }
 
@@ -63,14 +70,24 @@ export const SettingsPage: React.FC = () => {
       const res = await api.updateSettings({
         defaultLowStockThreshold: threshold,
         name: trimmedOrg,
+        currencySymbol,
+        taxRate,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        invoiceFooter: invoiceFooter.trim() || null,
       });
 
       if (res.success) {
         updateOrganization({
           defaultLowStockThreshold: threshold,
           name: trimmedOrg,
+          currencySymbol,
+          taxRate,
+          phone,
+          address,
+          invoiceFooter,
         });
-        setSuccessMsg('Settings updated successfully!');
+        setSuccessMsg('Store settings and billing preferences updated successfully!');
         setTimeout(() => setSuccessMsg(null), 4000);
       }
     } catch (err: any) {
@@ -84,10 +101,10 @@ export const SettingsPage: React.FC = () => {
     <div className="max-w-3xl space-y-8 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Organization Settings
+          Store & Organization Settings
         </h1>
         <p className="text-sm text-slate-500">
-          Configure default inventory alert rules and store profile
+          Configure branding, tax rates, billing preferences, and default inventory thresholds.
         </p>
       </div>
 
@@ -105,121 +122,145 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSave} noValidate className="space-y-6">
-        {/* Global Inventory Alert Settings (FR-7) */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
-              <Sliders className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Global Inventory Alert Rules</h2>
-              <p className="text-xs text-slate-500">
-                Applied to all products that do not specify a custom threshold
-              </p>
-            </div>
+      <form onSubmit={handleSave} className="space-y-6">
+        {/* Store Profile Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <Building2 className="w-5 h-5 text-blue-600" />
+            <h2 className="text-base font-bold text-slate-900">Store Branding & Details</h2>
           </div>
 
-          <div className="border-t border-slate-100 pt-5 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Default Low Stock Threshold (Units) <span className="text-rose-500">*</span>
-              </label>
-              <div className="max-w-xs">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={threshold}
-                  onChange={(e) => {
-                    setThreshold(parseInt(e.target.value, 10) || 0);
-                    if (fieldErrors.threshold) setFieldErrors((p) => ({ ...p, threshold: undefined }));
-                    if (errorMsg) setErrorMsg(null);
-                  }}
-                  className={`w-full px-3.5 py-2.5 text-sm rounded-xl outline-none transition ${
-                    fieldErrors.threshold
-                      ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
-                      : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                  }`}
-                />
-                {fieldErrors.threshold && (
-                  <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.threshold}</p>
-                )}
-              </div>
-              <div className="mt-2 flex items-start gap-2 text-xs text-slate-500">
-                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                <span>
-                  Any product with quantity &le; this number will automatically trigger a Low Stock
-                  warning on your Dashboard and catalog, unless overridden on the individual product.
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Organization Information */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-slate-100 text-slate-700 rounded-xl">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Store Profile & Multi-Tenancy</h2>
-              <p className="text-xs text-slate-500">
-                Data isolation details and organization credentials
-              </p>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-100 pt-5 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Organization / Store Display Name <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Store / Organization Name *
               </label>
               <input
                 type="text"
+                required
                 value={orgName}
-                onChange={(e) => {
-                  setOrgName(e.target.value);
-                  if (fieldErrors.orgName) setFieldErrors((p) => ({ ...p, orgName: undefined }));
-                  if (errorMsg) setErrorMsg(null);
-                }}
-                className={`w-full max-w-md px-3.5 py-2.5 text-sm rounded-xl outline-none transition ${
-                  fieldErrors.orgName
-                    ? 'border border-rose-300 bg-rose-50/30 text-rose-900 focus:ring-2 focus:ring-rose-500'
-                    : 'border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                }`}
+                onChange={(e) => setOrgName(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
               />
-              {fieldErrors.orgName && (
-                <p className="mt-1 text-xs text-rose-600 font-medium">{fieldErrors.orgName}</p>
-              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
-                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">
-                  Tenant Organization ID
-                </span>
-                <span className="text-xs font-mono font-semibold text-slate-700 break-all">
-                  {organization?.id || '—'}
-                </span>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
-                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">
-                  Owner Account Email
-                </span>
-                <span className="text-xs font-medium text-slate-700">{user?.email || '—'}</span>
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Store Phone Number
+              </label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 9876543210"
+                className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
+              />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Store Physical Address (Printed on invoices)
+            </label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="e.g. Shop 12, Main Market, MG Road, Bengaluru - 560001"
+              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
 
+        {/* Billing & Tax Settings Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <Receipt className="w-5 h-5 text-emerald-600" />
+            <h2 className="text-base font-bold text-slate-900">POS Billing & Tax Preferences</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Currency Symbol
+              </label>
+              <select
+                value={currencySymbol}
+                onChange={(e) => setCurrencySymbol(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="₹">₹ (INR - Indian Rupee)</option>
+                <option value="$">$ (USD - US Dollar)</option>
+                <option value="€">€ (EUR - Euro)</option>
+                <option value="£">£ (GBP - British Pound)</option>
+                <option value="AED">AED (UAE Dirham)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Default Tax Rate (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={taxRate}
+                onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-[11px] text-slate-400 mt-0.5 block">
+                Auto-calculated on sales (e.g. 18% for GST, 5% for VAT, 0 for none)
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Invoice Footer Message
+            </label>
+            <input
+              type="text"
+              value={invoiceFooter}
+              onChange={(e) => setInvoiceFooter(e.target.value)}
+              placeholder="e.g. Thank you for your business! Visit again."
+              className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Global Inventory Alert Rules */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+            <Sliders className="w-5 h-5 text-amber-600" />
+            <h2 className="text-base font-bold text-slate-900">Inventory Alert Rules</h2>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Default Low-Stock Alert Threshold (Units)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={threshold}
+              onChange={(e) => setThreshold(parseInt(e.target.value, 10) || 0)}
+              className="w-40 px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Used when a specific product does not have its own threshold configured.
+            </p>
+          </div>
+        </div>
+
+        {/* Submit Button */}
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={isSaving || isLoading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl shadow-md shadow-blue-500/20 transition disabled:opacity-50"
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 text-white text-sm font-semibold rounded-xl shadow-md transition"
           >
             <Save className="w-4 h-4" />
             {isSaving ? 'Saving Changes...' : 'Save Settings'}

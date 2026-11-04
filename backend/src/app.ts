@@ -9,6 +9,8 @@ import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import orderRoutes from './routes/orderRoutes';
+import supplierRoutes from './routes/supplierRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 
 export const createApp = () => {
@@ -62,6 +64,8 @@ export const createApp = () => {
   app.use('/api/products', productRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/orders', orderRoutes);
+  app.use('/api/suppliers', supplierRoutes);
 
   // Serve compiled frontend SPA if available and not in test mode
   if (ENV.NODE_ENV !== 'test') {

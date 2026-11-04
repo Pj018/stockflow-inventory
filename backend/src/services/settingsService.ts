@@ -40,6 +40,12 @@ export class SettingsService {
             ? data.defaultLowStockThreshold
             : undefined,
         name: data.name !== undefined ? data.name.trim() : undefined,
+        currency: data.currency !== undefined ? data.currency.trim() : undefined,
+        currencySymbol: data.currencySymbol !== undefined ? data.currencySymbol.trim() : undefined,
+        taxRate: data.taxRate !== undefined ? data.taxRate : undefined,
+        phone: data.phone !== undefined ? data.phone?.trim() || null : undefined,
+        address: data.address !== undefined ? data.address?.trim() || null : undefined,
+        invoiceFooter: data.invoiceFooter !== undefined ? data.invoiceFooter?.trim() || null : undefined,
       },
     });
 
