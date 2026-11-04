@@ -8,7 +8,9 @@ import {
   ArrowRight,
   Plus,
   RefreshCw,
-  SlidersHorizontal,
+  Clock,
+  Eye,
+  ArrowUpDown,
 } from 'lucide-react';
 import { api } from '../api/client';
 import { DashboardMetrics, Product } from '../types';
@@ -16,6 +18,7 @@ import { StatCard } from '../components/StatCard';
 import { StockBadge } from '../components/Badge';
 import { StockAdjustModal } from '../components/StockAdjustModal';
 import { ProductModal } from '../components/ProductModal';
+import { ProductDetailModal } from '../components/ProductDetailModal';
 
 export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardMetrics | null>(null);
@@ -25,6 +28,7 @@ export const DashboardPage: React.FC = () => {
   // Modals state
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
   const fetchMetrics = async () => {
     try {
@@ -55,6 +59,19 @@ export const DashboardPage: React.FC = () => {
     await fetchMetrics();
   };
 
+  const openDetailModal = async (product: Product) => {
+    try {
+      const res = await api.getProduct(product.id);
+      if (res.success) {
+        setDetailProduct(res.data);
+      } else {
+        setDetailProduct(product);
+      }
+    } catch {
+      setDetailProduct(product);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header bar */}
@@ -76,7 +93,7 @@ export const DashboardPage: React.FC = () => {
             className="p-2 text-slate-500 hover:text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm"
             title="Refresh metrics"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
           </button>
 
           <button
@@ -177,13 +194,20 @@ export const DashboardPage: React.FC = () => {
                   <th className="px-6 py-3 text-right">Threshold</th>
                   <th className="px-6 py-3 text-center">Status</th>
                   <th className="px-6 py-3 text-right">Selling Price</th>
-                  <th className="px-6 py-3 text-right">Action</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {data.lowStockItems.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                    <td className="px-6 py-4 font-semibold text-slate-900">{item.name}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-900">
+                      <button
+                        onClick={() => openDetailModal(item)}
+                        className="text-left hover:text-blue-600 transition"
+                      >
+                        {item.name}
+                      </button>
+                    </td>
                     <td className="px-6 py-4 font-mono text-xs text-slate-500">{item.sku}</td>
                     <td className="px-6 py-4 text-right font-bold text-slate-900">
                       {item.quantity}
@@ -206,12 +230,22 @@ export const DashboardPage: React.FC = () => {
                         : '—'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => setAdjustingProduct(item)}
-                        className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition"
-                      >
-                        Adjust Stock
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openDetailModal(item)}
+                          title="View Details"
+                          className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setAdjustingProduct(item)}
+                          className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition flex items-center gap-1"
+                        >
+                          <ArrowUpDown className="w-3.5 h-3.5" />
+                          Adjust Stock
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -228,22 +262,78 @@ export const DashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Quick Catalog preview */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-bold text-slate-900">Explore Catalog & Products</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Search items, modify prices, view stock audit logs, or download details.
-          </p>
+      {/* Recent Catalog Items */}
+      {data?.recentProducts && data.recentProducts.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Recent Catalog Items</h2>
+                <p className="text-xs text-slate-500">Latest inventory additions and updates</p>
+              </div>
+            </div>
+
+            <Link
+              to="/products"
+              className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+            >
+              Full Catalog ({data.summary.totalProducts})
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50/75 text-xs uppercase font-semibold text-slate-500 tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="px-6 py-3">Product Name</th>
+                  <th className="px-6 py-3">SKU</th>
+                  <th className="px-6 py-3 text-right">Units on Hand</th>
+                  <th className="px-6 py-3 text-right">Selling Price</th>
+                  <th className="px-6 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {data.recentProducts.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/50 transition">
+                    <td className="px-6 py-3.5 font-semibold text-slate-900">
+                      <button
+                        onClick={() => openDetailModal(p)}
+                        className="text-left hover:text-blue-600 transition"
+                      >
+                        {p.name}
+                      </button>
+                    </td>
+                    <td className="px-6 py-3.5 font-mono text-xs text-slate-500">{p.sku}</td>
+                    <td className="px-6 py-3.5 text-right font-bold text-slate-900">
+                      {p.quantity}
+                    </td>
+                    <td className="px-6 py-3.5 text-right text-slate-700">
+                      {p.sellingPrice !== null && p.sellingPrice !== undefined
+                        ? `₹${Number(p.sellingPrice).toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : '—'}
+                    </td>
+                    <td className="px-6 py-3.5 text-right">
+                      <button
+                        onClick={() => openDetailModal(p)}
+                        className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                      >
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <Link
-          to="/products"
-          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-xl transition"
-        >
-          Open Products List
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
+      )}
 
       {/* Modals */}
       <StockAdjustModal
@@ -258,6 +348,14 @@ export const DashboardPage: React.FC = () => {
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreateProduct}
         defaultThreshold={data?.organization.defaultLowStockThreshold || 5}
+      />
+
+      <ProductDetailModal
+        isOpen={!!detailProduct}
+        product={detailProduct}
+        onClose={() => setDetailProduct(null)}
+        onAdjustStock={(p) => setAdjustingProduct(p)}
+        onEdit={() => {}}
       />
     </div>
   );

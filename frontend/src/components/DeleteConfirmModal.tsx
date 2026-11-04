@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
 import { Product } from '../types';
 
 interface DeleteConfirmModalProps {
@@ -40,6 +40,15 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           <p className="mt-2 text-sm text-slate-500">
             Are you sure you want to delete <span className="font-semibold text-slate-700">"{product.name}"</span> ({product.sku})? This action cannot be undone.
           </p>
+
+          {product.quantity > 0 && (
+            <div className="mt-3.5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 text-left flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <strong>Warning:</strong> This item currently has <strong>{product.quantity} units</strong> on hand. Deleting will permanently remove it from your inventory catalog.
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 flex items-center justify-center gap-3">
             <button
